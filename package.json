@@ -1,0 +1,157 @@
+{
+  "name": "odoo-code-notepad",
+  "displayName": "Odoo Code Notepad",
+  "description": "Local offline task-based knowledge management system and code snippet saver for Odoo developers.",
+  "version": "1.0.0",
+  "publisher": "sumai-odoo",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "odoo-code-notepad-sidebar",
+          "title": "Odoo Code Notepad",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "odoo-code-notepad-sidebar": [
+        {
+          "id": "odoo-code-notepad-tasks",
+          "name": "Tasks",
+          "type": "tree"
+        },
+        {
+          "id": "odoo-code-notepad-favorites",
+          "name": "Favorites",
+          "type": "tree"
+        },
+        {
+          "id": "odoo-code-notepad-recent",
+          "name": "Recent Tasks",
+          "type": "tree"
+        },
+        {
+          "id": "odoo-code-notepad-search",
+          "name": "Search",
+          "type": "tree"
+        },
+        {
+          "id": "odoo-code-notepad-settings",
+          "name": "Settings",
+          "type": "tree"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "odoo-notepad.createTask",
+        "title": "Odoo Notepad: New Task",
+        "icon": "$(add)"
+      },
+      {
+        "command": "odoo-notepad.saveSnippet",
+        "title": "Odoo Notepad: Save Selected Code"
+      },
+      {
+        "command": "odoo-notepad.searchNotes",
+        "title": "Odoo Notepad: Search Notes"
+      },
+      {
+        "command": "odoo-notepad.exportPdf",
+        "title": "Odoo Notepad: Export Task as PDF"
+      },
+      {
+        "command": "odoo-notepad.backup",
+        "title": "Odoo Notepad: Export Backup"
+      },
+      {
+        "command": "odoo-notepad.restore",
+        "title": "Odoo Notepad: Restore Backup"
+      },
+      {
+        "command": "odoo-notepad.refreshTasks",
+        "title": "Refresh Tasks",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "odoo-notepad.createTask",
+          "when": "view == odoo-code-notepad-tasks",
+          "group": "navigation"
+        },
+        {
+          "command": "odoo-notepad.refreshTasks",
+          "when": "view == odoo-code-notepad-tasks || view == odoo-code-notepad-favorites || view == odoo-code-notepad-recent",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "odoo-notepad.exportPdf",
+          "when": "viewItem == taskItem",
+          "group": "inline"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "odoo-notepad.createTask",
+        "key": "ctrl+alt+n",
+        "mac": "ctrl+alt+n"
+      },
+      {
+        "command": "odoo-notepad.saveSnippet",
+        "key": "ctrl+alt+s",
+        "mac": "ctrl+alt+s",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "odoo-notepad.searchNotes",
+        "key": "ctrl+alt+f",
+        "mac": "ctrl+alt+f"
+      },
+      {
+        "command": "odoo-notepad.exportPdf",
+        "key": "ctrl+alt+p",
+        "mac": "ctrl+alt+p"
+      },
+      {
+        "command": "odoo-notepad.backup",
+        "key": "ctrl+alt+b",
+        "mac": "ctrl+alt+b"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "node build.js --minify",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/node": "^18.19.0",
+    "@types/vscode": "^1.80.0",
+    "esbuild": "^0.19.11",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.10",
+    "jspdf": "^2.5.1",
+    "marked": "^11.1.1",
+    "prismjs": "^1.29.0"
+  }
+}

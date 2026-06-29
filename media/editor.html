@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} https: data:; style-src 'nonce-${nonce}' ${cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' ${cspSource};">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="${styleResetUri}" rel="stylesheet" />
+  <link href="${styleVSCodeUri}" rel="stylesheet" />
+  <link href="${prismStyleUri}" rel="stylesheet" />
+  <link href="${styleMainUri}" rel="stylesheet" />
+  <title>Task Editor</title>
+</head>
+<body>
+  <!-- Task Header -->
+  <header class="task-header">
+    <div class="title-row">
+      <input type="text" id="task-title" placeholder="Task Title..." class="input-title" />
+      
+      <div class="actions-group">
+        <span id="save-status" class="save-status">Saved</span>
+        
+        <button id="btn-favorite" class="btn-icon" title="Favorite Task">
+          <span class="icon-star">★</span>
+        </button>
+
+        <button id="btn-pdf" class="btn-action" title="Export PDF">
+          <span class="icon-pdf">📄 PDF</span>
+        </button>
+
+        <button id="btn-delete" class="btn-danger" title="Delete Task">
+          <span>Delete</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <div class="status-wrapper">
+        <label for="task-status">Status:</label>
+        <select id="task-status" class="select-status">
+          <option value="Todo">Todo</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
+          <option value="Archived">Archived</option>
+        </select>
+      </div>
+      <div class="dates-wrapper">
+        <span id="task-dates">Created: --/--/---- | Updated: --/--/----</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Git Info Box -->
+  <section class="git-info-box" id="git-box">
+    <div class="git-header">
+      <span class="git-icon">🌿</span>
+      <strong>GIT & REPOSITORY INFORMATION</strong>
+    </div>
+    <div class="git-inputs-grid">
+      <div class="input-field">
+        <label for="git-repo">Repository Name:</label>
+        <input type="text" id="git-repo" placeholder="Repository Name..." />
+      </div>
+      <div class="input-field">
+        <label for="git-branch">Branch:</label>
+        <input type="text" id="git-branch" placeholder="Branch..." />
+      </div>
+      <div class="input-field span-all">
+        <label for="git-commit">Commit URL:</label>
+        <div class="link-input-wrapper">
+          <input type="text" id="git-commit" placeholder="https://github.com/owner/repo/commit/hash..." />
+          <button id="btn-open-commit" class="btn-link-open" type="button" title="Open Commit Link">↗ Open</button>
+        </div>
+        <span class="validation-error" id="err-commit"></span>
+      </div>
+      <div class="input-field span-all">
+        <label for="git-runbot">Runbot URL:</label>
+        <div class="link-input-wrapper">
+          <input type="text" id="git-runbot" placeholder="https://runbot.odoo.com/..." />
+          <button id="btn-open-runbot" class="btn-link-open" type="button" title="Open Runbot Link">↗ Open Runbot</button>
+        </div>
+        <span class="validation-error" id="err-runbot"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Description -->
+  <section class="section-desc">
+    <input type="text" id="task-desc" placeholder="Add a short description about this task..." class="input-desc" />
+  </section>
+
+  <!-- Tags Section -->
+  <section class="tags-section">
+    <div class="tags-container" id="tags-list">
+      <!-- Tag pills injected dynamically -->
+    </div>
+    <div class="tag-input-wrapper">
+      <input type="text" id="input-new-tag" placeholder="Add tag..." class="input-tag-add" />
+    </div>
+  </section>
+
+  <!-- Main Grid Layout -->
+  <main class="main-layout">
+    <!-- Left Pane: Notes (Markdown) -->
+    <div class="pane-left">
+      <div class="tab-header">
+        <button class="tab-btn active" data-tab="tab-write">Write Notes</button>
+        <button class="tab-btn" data-tab="tab-preview">Preview</button>
+        
+        <div class="editor-formatting-tools" id="editor-tools">
+          <button class="tool-btn" data-format="bold" title="Bold"><strong>B</strong></button>
+          <button class="tool-btn" data-format="italic" title="Italic"><em>I</em></button>
+          <button class="tool-btn" data-format="header" title="Header">H</button>
+          <button class="tool-btn" data-format="link" title="Link">🔗</button>
+          <button class="tool-btn" data-format="todo" title="Checkbox">☑</button>
+          <button class="tool-btn" data-format="table" title="Table">田</button>
+          <button class="tool-btn" data-format="code" title="Code Block">&lt;&gt;</button>
+        </div>
+      </div>
+      
+      <div class="tab-content" id="tab-write">
+        <textarea id="task-notes" placeholder="Write markdown notes here... Use shortcuts or formatting tools above."></textarea>
+      </div>
+      
+      <div class="tab-content hidden" id="tab-preview">
+        <div id="notes-preview" class="markdown-body">
+          <!-- Rendered Markdown goes here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Pane: Images and Snippets -->
+    <div class="pane-right">
+      <!-- Images Section -->
+      <section class="panel-section image-panel">
+        <div class="section-header">
+          <h3>Task Images</h3>
+          <button id="btn-add-image" class="btn-action-sm">+ Add Image</button>
+        </div>
+        
+        <div class="drop-zone" id="image-drop-zone">
+          <span class="drop-text">Drag & Drop images here, paste, or click Add Image</span>
+        </div>
+        
+        <div class="image-grid" id="image-preview-grid">
+          <!-- Images injected here -->
+        </div>
+      </section>
+
+      <!-- Code Snippets Section -->
+      <section class="panel-section snippet-panel">
+        <div class="section-header">
+          <h3>Saved Code Snippets</h3>
+          <span class="snippet-count" id="snippet-count">0 snippets</span>
+        </div>
+
+        <div class="snippet-list" id="snippet-container">
+          <!-- Snippet cards injected here -->
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Pass VS Code state data securely -->
+  <script nonce="${nonce}">
+    window.taskData = ${taskJSON};
+    window.taskResolvedData = ${taskResolvedJSON};
+    window.autosaveInterval = ${autosaveInterval};
+  </script>
+  
+  <!-- Image Fullscreen Modal Overlay -->
+  <div id="image-modal" class="modal hidden">
+    <span class="modal-close" id="modal-close-times">&times;</span>
+    <div class="modal-content-wrapper">
+      <div class="modal-image-container">
+        <img id="modal-img" src="" alt="Fullscreen Preview" />
+      </div>
+      <div class="modal-caption">
+        <span id="modal-filename">filename.png</span>
+        <span id="modal-dimensions"></span>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-modal-download" class="btn-action">Download Image</button>
+        <button id="btn-modal-close" class="btn-danger">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core Libraries -->
+  <script nonce="${nonce}" src="${markedLibUri}"></script>
+  <script nonce="${nonce}" src="${prismLibUri}"></script>
+  <!-- Client script -->
+  <script nonce="${nonce}" src="${scriptMainUri}"></script>
+</body>
+</html>
