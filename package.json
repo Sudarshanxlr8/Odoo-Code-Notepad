@@ -4,12 +4,40 @@
   "description": "Local offline task-based knowledge management system and code snippet saver for Odoo developers.",
   "version": "1.0.0",
   "publisher": "sumai-odoo",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.80.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sudarshanxlr8/Odoo-Code-Notepad.git"
+  },
+  "homepage": "https://github.com/Sudarshanxlr8/Odoo-Code-Notepad",
+  "bugs": {
+    "url": "https://github.com/Sudarshanxlr8/Odoo-Code-Notepad/issues"
+  },
   "categories": [
-    "Other"
+    "Other",
+    "Programming Languages",
+    "Snippets",
+    "Productivity"
   ],
+  "keywords": [
+    "odoo",
+    "odoo development",
+    "notes",
+    "developer",
+    "knowledge",
+    "markdown",
+    "code snippets",
+    "productivity",
+    "python",
+    "erp",
+    "xml",
+    "git",
+    "vscode"
+  ],
+  "icon": "icon.ico",
   "activationEvents": [
     "onStartupFinished"
   ],
