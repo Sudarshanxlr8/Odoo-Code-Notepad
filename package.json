@@ -1,5 +1,5 @@
 {
-  "name": "odoo-code-notepad",
+  "name": "odoo-codepad",
   "displayName": "Odoo Code Notepad",
   "description": "Local offline task-based knowledge management system and code snippet saver for Odoo developers.",
   "version": "1.0.0",
