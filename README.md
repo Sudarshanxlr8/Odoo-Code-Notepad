@@ -154,6 +154,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Publisher
 
 **Publisher Name**: Sudarshan Maity  
-- **GitHub**: [Add GitHub Profile]  
-- **Repository**: [Add GitHub Repository]  
-- **Marketplace**: [Add Marketplace URL]  
+- **GitHub**: [[GitHub Profile]  ](https://github.com/Sudarshanxlr8)
+- **Repository**: [[GitHub Repository]](https://github.com/Sudarshanxlr8/Odoo-Code-Notepad)  
+- **Marketplace**: [[Marketplace URL]  ](https://marketplace.visualstudio.com/items?itemName=sumai-odoo.odoo-code-notepad)
