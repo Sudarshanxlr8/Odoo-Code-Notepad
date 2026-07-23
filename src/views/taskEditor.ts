@@ -69,7 +69,7 @@ export class TaskEditorPanel {
     this._panel.onDidChangeViewState(
       () => {
         if (this._panel.visible) {
-          this._updateHtml();
+          this._panel.title = `Task: ${this._task.title}`;
         }
       },
       null,
@@ -325,21 +325,177 @@ export class TaskEditorPanel {
     }
 
     if (!fs.existsSync(targetPath)) {
-      vscode.window.showWarningMessage(`Could not locate snippet file at path: ${targetPath}. Please check if the file or repository was deleted.`);
+      vscode.window.showErrorMessage("Source file no longer exists.");
       return;
     }
 
     try {
-      const document = await vscode.workspace.openTextDocument(vscode.Uri.file(targetPath));
-      const editor = await vscode.window.showTextDocument(document);
-      
-      const startPos = new vscode.Position(Math.max(0, snippet.startLine - 1), 0);
-      const endPos = new vscode.Position(Math.max(0, snippet.endLine - 1), 999);
-      
-      editor.selection = new vscode.Selection(startPos, endPos);
-      editor.revealRange(new vscode.Range(startPos, endPos), vscode.TextEditorRevealType.InCenter);
+      const fileContent = fs.readFileSync(targetPath, 'utf8');
+      const lines = fileContent.split(/\r?\n/);
+      const snippetLinesCount = snippet.selectedCode.split(/\r?\n/).length;
+
+      // --- 1. Exact Match ---
+      const exactMatches: number[] = [];
+      let exactIdx = fileContent.indexOf(snippet.selectedCode);
+      while (exactIdx !== -1) {
+        const lineNum = fileContent.substring(0, exactIdx).split(/\r?\n/).length;
+        exactMatches.push(lineNum);
+        exactIdx = fileContent.indexOf(snippet.selectedCode, exactIdx + 1);
+      }
+
+      if (exactMatches.length === 1) {
+        await this._revealSnippet(targetPath, exactMatches[0], exactMatches[0] + snippetLinesCount - 1);
+        return;
+      } else if (exactMatches.length > 1) {
+        await this._showQuickPickMatches(targetPath, exactMatches, lines, snippetLinesCount);
+        return;
+      }
+
+      // --- 2. Trimmed Line Match ---
+      const snippetLinesTrimmed = snippet.selectedCode.split(/\r?\n/).map((l: string) => l.trim());
+      const fileLinesTrimmed = lines.map((l: string) => l.trim());
+      const trimmedMatches: number[] = [];
+
+      for (let i = 0; i <= fileLinesTrimmed.length - snippetLinesTrimmed.length; i++) {
+        let match = true;
+        for (let j = 0; j < snippetLinesTrimmed.length; j++) {
+          if (fileLinesTrimmed[i + j] !== snippetLinesTrimmed[j]) {
+            match = false;
+            break;
+          }
+        }
+        if (match) {
+          trimmedMatches.push(i + 1);
+        }
+      }
+
+      if (trimmedMatches.length === 1) {
+        vscode.window.showInformationMessage("Snippet moved. Jumped to the closest match.");
+        await this._revealSnippet(targetPath, trimmedMatches[0], trimmedMatches[0] + snippetLinesCount - 1);
+        return;
+      } else if (trimmedMatches.length > 1) {
+        await this._showQuickPickMatches(targetPath, trimmedMatches, lines, snippetLinesCount);
+        return;
+      }
+
+      // --- 3. Whitespace-insensitive Match (ignoring empty lines) ---
+      const snippetNorm = snippet.selectedCode.split(/\r?\n/).map((l: string) => l.replace(/\s+/g, ' ').trim()).filter((l: string) => l.length > 0);
+      const fileNorm: { text: string; origLine: number }[] = [];
+      for (let i = 0; i < lines.length; i++) {
+        const norm = lines[i].replace(/\s+/g, ' ').trim();
+        if (norm.length > 0) {
+          fileNorm.push({ text: norm, origLine: i + 1 });
+        }
+      }
+
+      const normMatches: number[] = [];
+      if (snippetNorm.length > 0) {
+        for (let i = 0; i <= fileNorm.length - snippetNorm.length; i++) {
+          let match = true;
+          for (let j = 0; j < snippetNorm.length; j++) {
+            if (fileNorm[i + j].text !== snippetNorm[j]) {
+              match = false;
+              break;
+            }
+          }
+          if (match) {
+            normMatches.push(fileNorm[i].origLine);
+          }
+        }
+      }
+
+      if (normMatches.length === 1) {
+        vscode.window.showInformationMessage("Snippet moved. Jumped to the closest match.");
+        await this._revealSnippet(targetPath, normMatches[0], normMatches[0] + snippetLinesCount - 1);
+        return;
+      } else if (normMatches.length > 1) {
+        await this._showQuickPickMatches(targetPath, normMatches, lines, snippetLinesCount);
+        return;
+      }
+
+      // --- 4. Fuzzy Similarity Match ---
+      // Requires at least 60% of the lines to match exactly in their normalized forms
+      const threshold = Math.max(1, Math.floor(snippetNorm.length * 0.6));
+      let bestScore = 0;
+      let bestMatches: number[] = [];
+
+      if (snippetNorm.length > 0) {
+        for (let i = 0; i <= fileNorm.length - snippetNorm.length; i++) {
+          let matchCount = 0;
+          for (let j = 0; j < snippetNorm.length; j++) {
+            if (fileNorm[i + j].text === snippetNorm[j]) {
+              matchCount++;
+            }
+          }
+          if (matchCount >= threshold) {
+            if (matchCount > bestScore) {
+              bestScore = matchCount;
+              bestMatches = [fileNorm[i].origLine];
+            } else if (matchCount === bestScore) {
+              bestMatches.push(fileNorm[i].origLine);
+            }
+          }
+        }
+      }
+
+      if (bestMatches.length === 1) {
+        vscode.window.showInformationMessage("Snippet moved. Jumped to the closest match.");
+        await this._revealSnippet(targetPath, bestMatches[0], bestMatches[0] + snippetLinesCount - 1);
+        return;
+      } else if (bestMatches.length > 1) {
+        await this._showQuickPickMatches(targetPath, bestMatches, lines, snippetLinesCount);
+        return;
+      }
+
+      // --- 5. Fallback ---
+      if (snippet.startLine <= lines.length) {
+        const choice = await vscode.window.showWarningMessage(
+          "This code snippet no longer exists in the current file. Open original saved line?",
+          "Yes",
+          "No"
+        );
+        if (choice === "Yes") {
+          await this._revealSnippet(targetPath, snippet.startLine, snippet.endLine);
+        }
+      } else {
+        vscode.window.showErrorMessage("This code snippet no longer exists in the current file.");
+      }
+
     } catch (e) {
       vscode.window.showErrorMessage('Failed to jump to file location: ' + e);
+    }
+  }
+
+  private async _revealSnippet(targetPath: string, startLine: number, endLine: number) {
+    const document = await vscode.workspace.openTextDocument(vscode.Uri.file(targetPath));
+    const editor = await vscode.window.showTextDocument(document);
+    
+    const startPos = new vscode.Position(Math.max(0, startLine - 1), 0);
+    const endPos = new vscode.Position(Math.max(0, endLine - 1), 999);
+    
+    editor.selection = new vscode.Selection(startPos, endPos);
+    editor.revealRange(new vscode.Range(startPos, endPos), vscode.TextEditorRevealType.InCenter);
+  }
+
+  private async _showQuickPickMatches(targetPath: string, matches: number[], lines: string[], snippetLinesCount: number) {
+    const items = matches.map(lineNum => {
+      const startIdx = Math.max(0, lineNum - 1);
+      const endIdx = Math.min(lines.length, lineNum + 4);
+      const preview = lines.slice(startIdx, endIdx).join(' \n');
+      return {
+        label: `Line ${lineNum}`,
+        description: lines[startIdx].trim(),
+        detail: preview,
+        lineNum: lineNum
+      };
+    });
+
+    const selection = await vscode.window.showQuickPick(items, {
+      placeHolder: 'Multiple matches found. Select a line to jump to:'
+    });
+
+    if (selection) {
+      await this._revealSnippet(targetPath, selection.lineNum, selection.lineNum + snippetLinesCount - 1);
     }
   }
 

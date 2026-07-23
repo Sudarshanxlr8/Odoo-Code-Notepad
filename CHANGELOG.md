@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# 1.0.1 - 2026-07-23
+
+## Fixed
+
+- Fixed Markdown preview formatting.
+- Fixed toolbar formatting behavior.
+- Fixed autosave and undo/redo issues.
+- Fixed cursor jumping after toolbar actions.
+- Improved "Jump to Code" by locating snippets using code search instead of relying only on line numbers.
+
+## Improved
+
+- Improved repository information layout.
+- Improved image preview experience.
+- Improved Markdown toolbar.
+- Various UI and stability improvements.
+
 ## [1.0.0] - 2026-06-30
 
 ### Added

@@ -2,7 +2,7 @@
   "name": "odoo-codepad",
   "displayName": "Odoo Codepad",
   "description": "Local offline task-based knowledge management system and code snippet saver for Odoo developers.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "sumai-odoo",
   "license": "MIT",
   "engines": {

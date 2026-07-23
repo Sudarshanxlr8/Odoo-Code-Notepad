@@ -66,7 +66,7 @@ When working on Odoo tasks, developers frequently search through vast codebases 
 
 You can search for and install **Odoo Code Notepad** directly from the Extension Marketplace within Visual Studio Code or download it from the web link:
 
-[Add Marketplace Link Here]
+[[Marketplace Link](https://marketplace.visualstudio.com/items?itemName=sumai-odoo.odoo-codepad)]
 
 ---
 

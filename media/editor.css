@@ -336,7 +336,47 @@ body {
   margin-left: auto;
   padding-right: var(--spacing-sm);
   display: flex;
+  align-items: center;
   gap: 4px;
+  background-color: var(--vscode-editorWidget-background, #252526);
+  border-radius: var(--border-radius-sm);
+  padding: 2px 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.editor-formatting-tools::-webkit-scrollbar {
+  height: 3px;
+}
+
+.editor-formatting-tools::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-formatting-tools::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background, rgba(128, 128, 128, 0.4));
+  border-radius: 2px;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.tool-btn {
+  flex-shrink: 0;
+}
+
+.tool-separator {
+  width: 1px;
+  height: 16px;
+  background-color: var(--vscode-panel-border, #3c3c3c);
+  margin: 0 4px;
+  display: inline-block;
+  flex-shrink: 0;
 }
 
 .tool-btn {
@@ -347,11 +387,61 @@ body {
   cursor: pointer;
   border-radius: var(--border-radius-sm);
   font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  min-width: 22px;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 .tool-btn:hover {
-  background-color: var(--vscode-button-secondaryHoverBackground, #444);
-  color: var(--vscode-button-secondaryForeground, #fff);
+  background-color: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
+  color: var(--vscode-toolbar-activeForeground, #fff);
+}
+
+.tool-btn.active {
+  background-color: var(--vscode-button-background, #7053c4);
+  color: var(--vscode-button-foreground, #fff);
+}
+
+/* Emoji Dropdown positioning */
+.emoji-picker-wrapper {
+  position: relative;
+}
+
+.emoji-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background-color: var(--vscode-dropdown-background, #252526);
+  border: 1px solid var(--vscode-dropdown-border, #3c3c3c);
+  border-radius: var(--border-radius-sm);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 6px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.emoji-dropdown.hidden {
+  display: none !important;
+}
+
+.emoji-option {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  transition: background-color 0.15s;
+}
+
+.emoji-option:hover {
+  background-color: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
 }
 
 .tab-content {
@@ -385,6 +475,36 @@ body {
   line-height: 1.6;
 }
 
+.markdown-body strong {
+  font-weight: bold;
+}
+
+.markdown-body em {
+  font-style: italic;
+}
+
+.markdown-body del,
+.markdown-body s,
+.markdown-body strike {
+  text-decoration: line-through;
+}
+
+.markdown-body blockquote {
+  border-left: 4px solid var(--vscode-panel-border, #3c3c3c);
+  padding: 4px var(--spacing-md, 12px);
+  color: var(--vscode-descriptionForeground, #858585);
+  margin: 10px 0;
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+.markdown-body code {
+  font-family: var(--vscode-editor-font-family, "SF Mono", Monaco, Courier, monospace);
+  font-size: 0.9em;
+  background-color: var(--vscode-textBlockCodeBlock-background, #2d2d2d);
+  padding: 2px 4px;
+  border-radius: var(--border-radius-sm);
+}
+
 /* Rendered Markdown Styling */
 .markdown-body h1 { font-size: 1.8em; font-weight: bold; border-bottom: 1px solid var(--vscode-panel-border); margin-bottom: 10px; margin-top: 15px; }
 .markdown-body h2 { font-size: 1.4em; font-weight: bold; border-bottom: 1px solid var(--vscode-panel-border); margin-bottom: 8px; margin-top: 12px; }
@@ -392,7 +512,6 @@ body {
 .markdown-body p { margin-bottom: 10px; }
 .markdown-body ul, .markdown-body ol { margin-left: 20px; margin-bottom: 10px; list-style-type: initial; }
 .markdown-body li { margin-bottom: 4px; }
-.markdown-body code { background-color: var(--vscode-textBlockCodeBlock-background, #2d2d2d); padding: 2px 4px; border-radius: var(--border-radius-sm); }
 .markdown-body pre { background-color: var(--vscode-textBlockCodeBlock-background, #2d2d2d); padding: var(--spacing-sm); border-radius: var(--border-radius-md); overflow-x: auto; margin-bottom: 10px; }
 .markdown-body pre code { background: none; padding: 0; }
 .markdown-body table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
@@ -769,6 +888,12 @@ body {
   grid-column: span 2;
 }
 
+@media (max-width: 600px) {
+  .git-inputs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .git-inputs-grid .input-field {
   display: flex;
   flex-direction: column;
@@ -823,3 +948,4 @@ body {
   display: none;
   margin-top: 2px;
 }
+

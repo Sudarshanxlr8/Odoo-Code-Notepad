@@ -65,7 +65,7 @@
         <label for="git-branch">Branch:</label>
         <input type="text" id="git-branch" placeholder="Branch..." />
       </div>
-      <div class="input-field span-all">
+      <div class="input-field">
         <label for="git-commit">Commit URL:</label>
         <div class="link-input-wrapper">
           <input type="text" id="git-commit" placeholder="https://github.com/owner/repo/commit/hash..." />
@@ -73,7 +73,7 @@
         </div>
         <span class="validation-error" id="err-commit"></span>
       </div>
-      <div class="input-field span-all">
+      <div class="input-field">
         <label for="git-runbot">Runbot URL:</label>
         <div class="link-input-wrapper">
           <input type="text" id="git-runbot" placeholder="https://runbot.odoo.com/..." />
@@ -108,13 +108,56 @@
         <button class="tab-btn" data-tab="tab-preview">Preview</button>
         
         <div class="editor-formatting-tools" id="editor-tools">
-          <button class="tool-btn" data-format="bold" title="Bold"><strong>B</strong></button>
-          <button class="tool-btn" data-format="italic" title="Italic"><em>I</em></button>
-          <button class="tool-btn" data-format="header" title="Header">H</button>
-          <button class="tool-btn" data-format="link" title="Link">🔗</button>
-          <button class="tool-btn" data-format="todo" title="Checkbox">☑</button>
-          <button class="tool-btn" data-format="table" title="Table">田</button>
-          <button class="tool-btn" data-format="code" title="Code Block">&lt;&gt;</button>
+          <!-- Headers Group -->
+          <div class="tool-group">
+            <button class="tool-btn" data-format="h1" title="Heading 1">H1</button>
+            <button class="tool-btn" data-format="h2" title="Heading 2">H2</button>
+            <button class="tool-btn" data-format="h3" title="Heading 3">H3</button>
+          </div>
+          <span class="tool-separator"></span>
+          
+          <!-- Text Styles Group -->
+          <div class="tool-group">
+            <button class="tool-btn" data-format="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+            <button class="tool-btn" data-format="italic" title="Italic (Ctrl+I)"><em>I</em></button>
+            <button class="tool-btn" data-format="strikethrough" title="Strikethrough"><s>S</s></button>
+            <button class="tool-btn" data-format="inline-code" title="Inline Code">`</button>
+            <button class="tool-btn" data-format="highlight" title="Highlight"><mark>H</mark></button>
+          </div>
+          <span class="tool-separator"></span>
+
+          <!-- Lists Group -->
+          <div class="tool-group">
+            <button class="tool-btn" data-format="bullet-list" title="Bullet List (Ctrl+Shift+8)">•—</button>
+            <button class="tool-btn" data-format="task-list" title="Task List">- [ ]</button>
+            <button class="tool-btn" data-format="quote" title="Blockquote">&gt;</button>
+          </div>
+          <span class="tool-separator"></span>
+
+          <!-- Inserts Group -->
+          <div class="tool-group">
+            <button class="tool-btn" data-format="link" title="Insert Link">🔗</button>
+            <button class="tool-btn" data-format="table" title="Insert Table">田</button>
+            <button class="tool-btn" data-format="code-block" title="Insert Code Block">&lt;/&gt;</button>
+            <button class="tool-btn" data-format="hr" title="Horizontal Rule">——</button>
+          </div>
+          <span class="tool-separator"></span>
+
+          <!-- Emojis Group -->
+          <div class="tool-group emoji-picker-wrapper">
+            <button class="tool-btn" id="btn-emoji-picker" title="Insert Emoji" type="button">😀</button>
+            <div class="emoji-dropdown hidden" id="emoji-dropdown">
+              <button class="emoji-option" data-emoji="✅" title="Checkmark">✅</button>
+              <button class="emoji-option" data-emoji="❌" title="Cross">❌</button>
+              <button class="emoji-option" data-emoji="⚠️" title="Warning">⚠️</button>
+              <button class="emoji-option" data-emoji="🚀" title="Rocket">🚀</button>
+              <button class="emoji-option" data-emoji="🐛" title="Bug">🐛</button>
+              <button class="emoji-option" data-emoji="✨" title="Sparkles">✨</button>
+              <button class="emoji-option" data-emoji="📌" title="Pin">📌</button>
+              <button class="emoji-option" data-emoji="💡" title="Idea">💡</button>
+            </div>
+          </div>
+          
         </div>
       </div>
       

@@ -118,6 +118,7 @@ export class StorageService {
         maxRecentTasks: 10,
         storageFolder: this.baseDir
       };
+      this.settingsCache = defaultSettings;
       return defaultSettings;
     }
   }

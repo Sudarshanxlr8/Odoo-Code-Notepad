@@ -185,7 +185,7 @@ function setupListeners() {
     safeAddListener(btn, 'click', (e) => {
       // Toggle button active state
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
+      btn.classList.add('active');
       
       // Toggle content panel
       document.querySelectorAll('.tab-content').forEach(pane => pane.classList.add('hidden'));
@@ -207,14 +207,60 @@ function setupListeners() {
     }, `tab-btn-${tabId || idx}`);
   });
 
-  // Formatting tools actions
-  document.querySelectorAll('.tool-btn').forEach((btn, idx) => {
-    const formatType = btn.getAttribute('data-format') || idx;
+  // Formatting tools actions (only for buttons with data-format)
+  document.querySelectorAll('.tool-btn[data-format]').forEach((btn, idx) => {
+    const formatType = btn.getAttribute('data-format');
     safeAddListener(btn, 'click', (e) => {
       applyMarkdownFormatting(formatType);
       markChanged();
     }, `tool-btn-${formatType}`);
   });
+
+  // Emoji Picker toggle and option selection listeners
+  const btnEmojiPicker = document.getElementById('btn-emoji-picker');
+  const emojiDropdown = document.getElementById('emoji-dropdown');
+  if (btnEmojiPicker && emojiDropdown) {
+    safeAddListener(btnEmojiPicker, 'click', (e) => {
+      e.stopPropagation();
+      emojiDropdown.classList.toggle('hidden');
+    }, 'btn-emoji-picker');
+
+    // Close dropdown on click outside
+    document.addEventListener('click', () => {
+      emojiDropdown.classList.add('hidden');
+    });
+
+    document.querySelectorAll('.emoji-option').forEach(btn => {
+      safeAddListener(btn, 'click', (e) => {
+        e.stopPropagation();
+        const emoji = btn.getAttribute('data-emoji');
+        insertEmoji(emoji);
+        emojiDropdown.classList.add('hidden');
+        markChanged();
+      }, `emoji-option-${btn.getAttribute('data-emoji')}`);
+    });
+  }
+
+  // Keyboard Shortcuts inside the notes editor
+  safeAddListener(elNotes, 'keydown', (e) => {
+    if (e.ctrlKey && e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      applyMarkdownFormatting('bold');
+      markChanged();
+    } else if (e.ctrlKey && e.key.toLowerCase() === 'i') {
+      e.preventDefault();
+      applyMarkdownFormatting('italic');
+      markChanged();
+    } else if (e.ctrlKey && e.shiftKey && (e.key === '8' || e.key === '*')) {
+      e.preventDefault();
+      applyMarkdownFormatting('bullet-list');
+      markChanged();
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      handleTabIndent(e.shiftKey);
+      markChanged();
+    }
+  }, 'task-notes');
 
   // Action Buttons
   safeAddListener(elBtnFavorite, 'click', () => {
@@ -315,6 +361,95 @@ function setupListeners() {
         break;
     }
   });
+
+}
+
+// Safe tab indent/outdent helper
+function handleTabIndent(isOutdent) {
+  const textarea = elNotes;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+  const savedScrollTop = textarea.scrollTop;
+  
+  const beforeText = text.substring(0, start);
+  const selectedText = text.substring(start, end);
+  const afterText = text.substring(end);
+  
+  const startLineIndex = beforeText.lastIndexOf('\n') + 1;
+  const endLineIndex = end + (afterText.indexOf('\n') === -1 ? afterText.length : afterText.indexOf('\n'));
+  
+  const affectedText = text.substring(startLineIndex, endLineIndex);
+  const lines = affectedText.split('\n');
+  
+  let newAffectedText = '';
+  let shiftCount = 0;
+  
+  if (start !== end && lines.length > 1) {
+    newAffectedText = lines.map(line => {
+      if (isOutdent) {
+        if (line.startsWith('    ')) {
+          shiftCount -= 4;
+          return line.substring(4);
+        } else if (line.startsWith('\t')) {
+          shiftCount -= 1;
+          return line.substring(1);
+        }
+        const spaceCount = line.match(/^ */)[0].length;
+        if (spaceCount > 0) {
+          const toRemove = Math.min(spaceCount, 4);
+          shiftCount -= toRemove;
+          return line.substring(toRemove);
+        }
+        return line;
+      } else {
+        shiftCount += 4;
+        return '    ' + line;
+      }
+    }).join('\n');
+    
+    textarea.value = text.substring(0, startLineIndex) + newAffectedText + text.substring(endLineIndex);
+    textarea.setSelectionRange(start + (isOutdent ? Math.max(shiftCount, -4) : 4), end + shiftCount);
+  } else {
+    if (isOutdent) {
+      const lineStart = beforeText.lastIndexOf('\n') + 1;
+      const currentLine = text.substring(lineStart, start);
+      if (currentLine.startsWith('    ')) {
+        textarea.value = text.substring(0, lineStart) + currentLine.substring(4) + text.substring(start);
+        textarea.setSelectionRange(start - 4, start - 4);
+      } else if (currentLine.startsWith('\t')) {
+        textarea.value = text.substring(0, lineStart) + currentLine.substring(1) + text.substring(start);
+        textarea.setSelectionRange(start - 1, start - 1);
+      } else {
+        const spaceCount = currentLine.match(/^ */)[0].length;
+        if (spaceCount > 0) {
+          const toRemove = Math.min(spaceCount, 4);
+          textarea.value = text.substring(0, lineStart) + currentLine.substring(toRemove) + text.substring(start);
+          textarea.setSelectionRange(start - toRemove, start - toRemove);
+        }
+      }
+    } else {
+      textarea.value = beforeText + '    ' + afterText;
+      textarea.setSelectionRange(start + 4, start + 4);
+    }
+  }
+  
+  textarea.scrollTop = savedScrollTop;
+}
+
+// Emoji insertion helper
+function insertEmoji(emoji) {
+  const textarea = elNotes;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+  const savedScrollTop = textarea.scrollTop;
+  
+  textarea.value = text.substring(0, start) + emoji + text.substring(end);
+  const newPos = start + emoji.length;
+  textarea.focus();
+  textarea.setSelectionRange(newPos, newPos);
+  textarea.scrollTop = savedScrollTop;
 }
 
 // Markdown formatting helper
@@ -324,43 +459,119 @@ function applyMarkdownFormatting(type) {
   const end = textarea.selectionEnd;
   const text = textarea.value;
   const selectedText = text.substring(start, end);
+  const savedScrollTop = textarea.scrollTop;
   
-  let formatted = '';
+  let prefix = '';
+  let suffix = '';
   let cursorOffset = 0;
-
+  let linePrefix = '';
+  
   switch (type) {
     case 'bold':
-      formatted = `**${selectedText || 'bold text'}**`;
+      prefix = '**';
+      suffix = '**';
       cursorOffset = selectedText ? 0 : 2;
       break;
     case 'italic':
-      formatted = `*${selectedText || 'italic text'}*`;
+      prefix = '*';
+      suffix = '*';
       cursorOffset = selectedText ? 0 : 1;
       break;
-    case 'header':
-      formatted = `\n### ${selectedText || 'Header text'}\n`;
+    case 'strikethrough':
+      prefix = '~~';
+      suffix = '~~';
+      cursorOffset = selectedText ? 0 : 2;
+      break;
+    case 'inline-code':
+      prefix = '`';
+      suffix = '`';
+      cursorOffset = selectedText ? 0 : 1;
+      break;
+    case 'highlight':
+      prefix = '<mark>';
+      suffix = '</mark>';
+      cursorOffset = selectedText ? 0 : 7;
+      break;
+    case 'h1':
+      linePrefix = '# ';
+      break;
+    case 'h2':
+      linePrefix = '## ';
+      break;
+    case 'h3':
+      linePrefix = '### ';
+      break;
+    case 'bullet-list':
+      linePrefix = '* ';
+      break;
+    case 'task-list':
+      linePrefix = '- [ ] ';
+      break;
+    case 'quote':
+      linePrefix = '> ';
       break;
     case 'link':
-      formatted = `[${selectedText || 'link description'}](url)`;
-      cursorOffset = selectedText ? 5 : 1;
+      prefix = '[';
+      suffix = '](http://)';
+      cursorOffset = selectedText ? 9 : 1;
       break;
-    case 'todo':
-      formatted = `\n- [ ] ${selectedText || 'todo item'}\n`;
+    case 'code-block':
+      prefix = '\n```python\n';
+      suffix = '\n```\n';
+      cursorOffset = selectedText ? 0 : 5;
       break;
     case 'table':
-      formatted = `\n| Column 1 | Column 2 |\n| -------- | -------- |\n| Item 1   | Item 2   |\n`;
+      prefix = '\n| Column 1 | Column 2 |\n| -------- | -------- |\n| ';
+      suffix = ' |          |\n';
+      cursorOffset = selectedText ? 0 : 12;
       break;
-    case 'code':
-      formatted = `\n\`\`\`python\n${selectedText || '# code here'}\n\`\`\`\n`;
+    case 'hr':
+      prefix = '\n---\n';
       break;
   }
 
-  textarea.value = text.substring(0, start) + formatted + text.substring(end);
-  textarea.focus();
+  if (linePrefix) {
+    // Line-based formatting
+    const beforeText = text.substring(0, start);
+    const lineStart = beforeText.lastIndexOf('\n') + 1;
+    const currentLine = text.substring(lineStart, start);
+    
+    // Check if line prefix is already present, if so, toggle it off
+    if (currentLine.startsWith(linePrefix)) {
+      textarea.value = text.substring(0, lineStart) + currentLine.substring(linePrefix.length) + text.substring(start);
+      textarea.focus();
+      textarea.setSelectionRange(start - linePrefix.length, end - linePrefix.length);
+    } else {
+      // Toggle off other headings if inserting h1/h2/h3
+      let cleanLine = currentLine;
+      let removedLength = 0;
+      if (type === 'h1' || type === 'h2' || type === 'h3') {
+        const headingMatch = currentLine.match(/^(#{1,3}\s+)/);
+        if (headingMatch) {
+          cleanLine = currentLine.substring(headingMatch[0].length);
+          removedLength = headingMatch[0].length;
+        }
+      }
+      
+      textarea.value = text.substring(0, lineStart) + linePrefix + cleanLine + text.substring(start);
+      textarea.focus();
+      textarea.setSelectionRange(start + linePrefix.length - removedLength, end + linePrefix.length - removedLength);
+    }
+  } else {
+    // Inline / Block formatting
+    const formatted = prefix + (selectedText || '') + suffix;
+    textarea.value = text.substring(0, start) + formatted + text.substring(end);
+    textarea.focus();
+    
+    if (selectedText) {
+      textarea.setSelectionRange(start + prefix.length, end + prefix.length);
+    } else {
+      const newCursorPos = start + formatted.length - cursorOffset;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }
+  }
   
-  // Set selections
-  const newCursorPos = start + formatted.length - cursorOffset;
-  textarea.setSelectionRange(newCursorPos, newCursorPos);
+  textarea.scrollTop = savedScrollTop;
 }
 
 // Render Markdown notes preview
@@ -369,16 +580,36 @@ function renderMarkdownPreview() {
   const previewDiv = document.getElementById('notes-preview');
   
   try {
-    // Configure marked options
-    marked.setOptions({
-      gfm: true,
-      breaks: true
-    });
+    let m = null;
+    if (typeof marked !== 'undefined') {
+      m = marked;
+    } else if (typeof window !== 'undefined' && typeof window.marked !== 'undefined') {
+      m = window.marked;
+    } else if (typeof exports !== 'undefined' && typeof exports.parse === 'function') {
+      m = exports;
+    }
     
-    previewDiv.innerHTML = marked.parse(notesText || '*No notes recorded. Write some notes in the Write tab!*');
+    if (m) {
+      if (typeof m.use === 'function') {
+        m.use({ gfm: true, breaks: true });
+      } else if (typeof m.setOptions === 'function') {
+        m.setOptions({ gfm: true, breaks: true });
+      }
+      
+      const parseFn = typeof m.parse === 'function' ? m.parse : (typeof m === 'function' ? m : null);
+      if (parseFn) {
+        previewDiv.innerHTML = parseFn(notesText || '*No notes recorded. Write some notes in the Write tab!*');
+      } else {
+        previewDiv.innerHTML = notesText || '';
+      }
+    } else {
+      previewDiv.innerHTML = notesText || '';
+    }
     
     // Trigger Prism Highlight
-    Prism.highlightAllUnder(previewDiv);
+    if (typeof Prism !== 'undefined' && Prism.highlightAllUnder) {
+      Prism.highlightAllUnder(previewDiv);
+    }
   } catch (e) {
     previewDiv.innerHTML = `<span style="color:#d32f2f">Error parsing markdown: ${e}</span>`;
   }
@@ -681,6 +912,8 @@ function saveData() {
     }
   }, 400);
 }
+
+
 
 // Run Initializer
 init();
