@@ -141,7 +141,7 @@ Planned enhancements for future releases:
 
 Contributions, bug reports, and feature suggestions are welcome. Please open an issue or submit a pull request on the repository:
 
-[Add GitHub Repository Link Here]
+[[ Repository Link Here](https://github.com/Sudarshanxlr8/Odoo-Code-Notepad)]
 
 ---
 
