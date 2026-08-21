@@ -19,6 +19,20 @@
       
       <div class="actions-group">
         <span id="save-status" class="save-status">Saved</span>
+
+        <div class="github-sync-wrapper" id="github-sync-wrapper">
+          <span class="github-badge-text" id="github-badge-text">GitHub: ○ Not synced</span>
+          <button id="btn-github-sync" class="btn-action-sm" title="Sync Task with GitHub">Sync</button>
+          <div class="dropdown-container">
+            <button id="btn-github-menu" class="btn-icon-sm" title="GitHub Actions">⋮</button>
+            <div id="github-dropdown-menu" class="dropdown-menu hidden">
+              <button class="dropdown-item" id="menu-github-sync">Sync</button>
+              <button class="dropdown-item" id="menu-github-push">Push to GitHub</button>
+              <button class="dropdown-item" id="menu-github-pull">Pull from GitHub</button>
+              <button class="dropdown-item" id="menu-github-open">Open on GitHub</button>
+            </div>
+          </div>
+        </div>
         
         <button id="btn-favorite" class="btn-icon" title="Favorite Task">
           <span class="icon-star">★</span>
