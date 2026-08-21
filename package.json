@@ -73,6 +73,11 @@
           "type": "tree"
         },
         {
+          "id": "odoo-code-notepad-github",
+          "name": "GitHub Notes",
+          "type": "tree"
+        },
+        {
           "id": "odoo-code-notepad-settings",
           "name": "Settings",
           "type": "tree"
@@ -109,6 +114,42 @@
         "command": "odoo-notepad.refreshTasks",
         "title": "Refresh Tasks",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "odoo-notepad.connectGithub",
+        "title": "Odoo Notepad: Connect GitHub Notes"
+      },
+      {
+        "command": "odoo-notepad.syncCurrentTask",
+        "title": "Odoo Notepad: Sync Current Task"
+      },
+      {
+        "command": "odoo-notepad.pushCurrentTask",
+        "title": "Odoo Notepad: Push Current Task to GitHub"
+      },
+      {
+        "command": "odoo-notepad.pullCurrentTask",
+        "title": "Odoo Notepad: Pull Current Task from GitHub"
+      },
+      {
+        "command": "odoo-notepad.syncAll",
+        "title": "Odoo Notepad: Sync All Tasks"
+      },
+      {
+        "command": "odoo-notepad.pushAll",
+        "title": "Odoo Notepad: Push All Tasks to GitHub"
+      },
+      {
+        "command": "odoo-notepad.pullAll",
+        "title": "Odoo Notepad: Pull All Tasks from GitHub"
+      },
+      {
+        "command": "odoo-notepad.openGithubRepo",
+        "title": "Odoo Notepad: Open GitHub Repository"
+      },
+      {
+        "command": "odoo-notepad.disconnectGithub",
+        "title": "Odoo Notepad: Disconnect GitHub Notes"
       }
     ],
     "menus": {
