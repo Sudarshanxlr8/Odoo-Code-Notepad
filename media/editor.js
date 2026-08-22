@@ -58,6 +58,16 @@ const elBtnModalClose = document.getElementById('btn-modal-close');
 const elModalCloseTimes = document.getElementById('modal-close-times');
 const elBtnModalDownload = document.getElementById('btn-modal-download');
 
+// GitHub Controls DOM Elements
+const elGitHubBadgeText = document.getElementById('github-badge-text');
+const elBtnGitHubSync = document.getElementById('btn-github-sync');
+const elBtnGitHubMenu = document.getElementById('btn-github-menu');
+const elGitHubDropdownMenu = document.getElementById('github-dropdown-menu');
+const elMenuGitHubSync = document.getElementById('menu-github-sync');
+const elMenuGitHubPush = document.getElementById('menu-github-push');
+const elMenuGitHubPull = document.getElementById('menu-github-pull');
+const elMenuGitHubOpen = document.getElementById('menu-github-open');
+
 // Init function
 function init() {
   console.log("Initializing webview. Task ID:", task.id);
@@ -81,6 +91,9 @@ function init() {
   
   // Favorite state
   updateFavoriteState(task.favorite);
+
+  // GitHub Sync State
+  updateGitHubSyncState(task.githubSync?.syncState);
 
   // Git Info
   elGitRepo.value = task.repository?.repositoryName || '';
@@ -111,6 +124,21 @@ function updateFavoriteState(isFav) {
   } else {
     elBtnFavorite.classList.remove('active');
     elBtnFavorite.querySelector('.icon-star').textContent = '☆';
+  }
+}
+
+function updateGitHubSyncState(syncState) {
+  let label = 'GitHub: ○ Not synced';
+  switch (syncState) {
+    case 'synced': label = 'GitHub: ✓ Synced'; break;
+    case 'local_ahead': label = 'GitHub: ↑ Local'; break;
+    case 'remote_ahead': label = 'GitHub: ↓ Remote'; break;
+    case 'conflict': label = 'GitHub: ⚠ Conflict'; break;
+    case 'remote_deleted': label = 'GitHub: ! Remote deleted'; break;
+    default: label = 'GitHub: ○ Not synced'; break;
+  }
+  if (elGitHubBadgeText) {
+    elGitHubBadgeText.textContent = label;
   }
 }
 
@@ -267,6 +295,45 @@ function setupListeners() {
     vscode.postMessage({ command: 'toggleFavorite' });
   }, 'btn-favorite');
 
+  // GitHub Actions
+  safeAddListener(elBtnGitHubSync, 'click', () => {
+    vscode.postMessage({ command: 'githubSyncTask' });
+  }, 'btn-github-sync');
+
+  safeAddListener(elBtnGitHubMenu, 'click', (e) => {
+    e.stopPropagation();
+    if (elGitHubDropdownMenu) {
+      elGitHubDropdownMenu.classList.toggle('hidden');
+    }
+  }, 'btn-github-menu');
+
+  // Close GitHub dropdown on click outside
+  document.addEventListener('click', () => {
+    if (elGitHubDropdownMenu) {
+      elGitHubDropdownMenu.classList.add('hidden');
+    }
+  });
+
+  safeAddListener(elMenuGitHubSync, 'click', () => {
+    if (elGitHubDropdownMenu) { elGitHubDropdownMenu.classList.add('hidden'); }
+    vscode.postMessage({ command: 'githubSyncTask' });
+  }, 'menu-github-sync');
+
+  safeAddListener(elMenuGitHubPush, 'click', () => {
+    if (elGitHubDropdownMenu) { elGitHubDropdownMenu.classList.add('hidden'); }
+    vscode.postMessage({ command: 'githubPushTask' });
+  }, 'menu-github-push');
+
+  safeAddListener(elMenuGitHubPull, 'click', () => {
+    if (elGitHubDropdownMenu) { elGitHubDropdownMenu.classList.add('hidden'); }
+    vscode.postMessage({ command: 'githubPullTask' });
+  }, 'menu-github-pull');
+
+  safeAddListener(elMenuGitHubOpen, 'click', () => {
+    if (elGitHubDropdownMenu) { elGitHubDropdownMenu.classList.add('hidden'); }
+    vscode.postMessage({ command: 'githubOpenTask' });
+  }, 'menu-github-open');
+
   safeAddListener(elBtnPdf, 'click', () => {
     vscode.postMessage({ command: 'exportPdf' });
   }, 'btn-pdf');
@@ -358,6 +425,9 @@ function setupListeners() {
         break;
       case 'updateFavorite':
         updateFavoriteState(message.favorite);
+        break;
+      case 'updateGitHubStatus':
+        updateGitHubSyncState(message.syncState);
         break;
     }
   });
