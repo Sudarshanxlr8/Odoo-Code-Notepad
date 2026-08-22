@@ -122,6 +122,78 @@ body {
   font-size: 11px;
 }
 
+.github-sync-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--vscode-badge-background, #2b2b2b);
+  border: 1px solid var(--vscode-widget-border, #444);
+  padding: 3px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: 12px;
+}
+
+.github-badge-text {
+  font-weight: 500;
+  color: var(--vscode-badge-foreground, #ccc);
+  white-space: nowrap;
+}
+
+.btn-icon-sm {
+  background: transparent;
+  color: var(--vscode-icon-foreground, #ccc);
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: var(--border-radius-sm);
+}
+
+.btn-icon-sm:hover {
+  background-color: var(--vscode-toolbar-hoverBackground, rgba(255,255,255,0.1));
+}
+
+.dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background-color: var(--vscode-menu-background, #252526);
+  border: 1px solid var(--vscode-menu-border, #454545);
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+}
+
+.dropdown-menu.hidden {
+  display: none !important;
+}
+
+.dropdown-item {
+  background: transparent;
+  border: none;
+  color: var(--vscode-menu-foreground, #cccccc);
+  padding: 6px 12px;
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.dropdown-item:hover {
+  background-color: var(--vscode-menu-selectionBackground, #04395e);
+  color: var(--vscode-menu-selectionForeground, #ffffff);
+}
+
 .btn-danger {
   background-color: var(--vscode-statusBarItem-errorBackground, #d32f2f);
   color: #fff;
