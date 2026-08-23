@@ -5,6 +5,9 @@ import { StorageService } from '../services/storage';
 import { GitService } from '../services/git';
 import { PdfService } from '../services/pdf';
 import { BackupService } from '../services/backup';
+import { GitHubAuthService } from '../services/githubAuth';
+import { GitHubService } from '../services/github';
+import { GitHubSyncService } from '../services/githubSync';
 import { Task, CodeSnippet, TaskStatus, RepositoryInfo } from '../types';
 import { TaskEditorPanel } from '../views/taskEditor';
 import { TaskTreeProvider } from '../providers/taskProvider';
@@ -12,6 +15,7 @@ import { FavoriteTreeProvider } from '../providers/favoriteProvider';
 import { RecentTreeProvider } from '../providers/recentProvider';
 import { SearchTreeProvider } from '../providers/searchProvider';
 import { SettingsTreeProvider } from '../providers/settingsProvider';
+import { GitHubTreeProvider } from '../providers/githubProvider';
 
 export class CommandManager {
   constructor(
@@ -20,7 +24,8 @@ export class CommandManager {
     private favoriteProvider: FavoriteTreeProvider,
     private recentProvider: RecentTreeProvider,
     private searchProvider: SearchTreeProvider,
-    private settingsProvider: SettingsTreeProvider
+    private settingsProvider: SettingsTreeProvider,
+    private githubProvider?: GitHubTreeProvider
   ) {}
 
   public registerCommands(): void {
@@ -32,6 +37,9 @@ export class CommandManager {
         this.recentProvider.refresh();
         this.searchProvider.refresh();
         this.settingsProvider.refresh();
+        if (this.githubProvider) {
+          this.githubProvider.refresh();
+        }
       })
     );
 
@@ -509,5 +517,306 @@ export class CommandManager {
         vscode.commands.executeCommand('odoo-notepad.refreshTasks');
       })
     );
+
+    // 11. Connect GitHub Notes
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand('odoo-notepad.connectGithub', async () => {
+        try {
+          const session = await GitHubAuthService.getSession(true);
+          if (!session) {
+            vscode.window.showWarningMessage('GitHub authentication cancelled.');
+            return;
+          }
+
+          const userProfile = await GitHubAuthService.getUserProfile(session.accessToken);
+          if (!userProfile) {
+            vscode.window.showErrorMessage('Failed to fetch GitHub profile for authenticated session.');
+            return;
+          }
+
+          // Option: Create New or Use Existing
+          const setupChoice = await vscode.window.showQuickPick(
+            [
+              { label: '$(repo-create) Create New Private Repository', id: 'create', description: 'Create a dedicated private repository (e.g. Odoo-Code-Notepad-Notes)' },
+              { label: '$(repo) Use Existing Repository', id: 'existing', description: 'Connect an existing private or public GitHub repository' }
+            ],
+            { placeHolder: 'Set up GitHub Notes Synchronization Repository' }
+          );
+
+          if (!setupChoice) {
+            return;
+          }
+
+          let repoInfo = null;
+
+          if (setupChoice.id === 'create') {
+            const repoName = await vscode.window.showInputBox({
+              prompt: 'Enter Name for New Private GitHub Notes Repository',
+              value: 'Odoo-Code-Notepad-Notes',
+              validateInput: (val) => val && val.trim() !== '' ? null : 'Repository name cannot be empty'
+            });
+
+            if (!repoName) {
+              return;
+            }
+
+            repoInfo = await vscode.window.withProgress({
+              location: vscode.ProgressLocation.Notification,
+              title: `Creating private GitHub repository "${repoName.trim()}"...`
+            }, async () => {
+              const newRepo = await GitHubService.createPrivateRepository(repoName.trim(), 'Synchronized notes from Odoo Code Notepad', session.accessToken);
+              await GitHubSyncService.initializeNotesRepository(newRepo.owner, newRepo.name, newRepo.defaultBranch, session.accessToken);
+              return newRepo;
+            });
+
+          } else {
+            // Pick existing repo
+            const userRepos = await GitHubService.listUserRepositories(session.accessToken);
+            const repoPicks = userRepos.map(r => ({
+              label: `${r.owner}/${r.name}`,
+              description: r.isPrivate ? 'Private' : 'Public (Warning)',
+              repo: r
+            }));
+
+            const selectedPick = await vscode.window.showQuickPick(repoPicks, {
+              placeHolder: 'Select existing repository for Odoo Code Notepad Notes'
+            });
+
+            if (!selectedPick) {
+              return;
+            }
+
+            const chosen = selectedPick.repo;
+            if (!chosen.isPrivate) {
+              const confirmPublic = await vscode.window.showWarningMessage(
+                `Warning: The repository "${chosen.owner}/${chosen.name}" is public. Your notes may be visible to anyone. Proceed anyway?`,
+                { modal: true },
+                'Proceed', 'Cancel'
+              );
+              if (confirmPublic !== 'Proceed') {
+                return;
+              }
+            }
+
+            repoInfo = await GitHubService.getRepository(chosen.owner, chosen.name, session.accessToken);
+          }
+
+          if (!repoInfo) {
+            vscode.window.showErrorMessage('Failed to connect to the selected repository.');
+            return;
+          }
+
+          // Save GitHub configuration
+          await StorageService.saveGitHubConfig({
+            connected: true,
+            account: userProfile,
+            repository: repoInfo,
+            lastSyncedAt: new Date().toISOString()
+          });
+
+          vscode.window.showInformationMessage(`✓ Connected to GitHub Notes repository: ${repoInfo.owner}/${repoInfo.name}`);
+          vscode.commands.executeCommand('odoo-notepad.refreshTasks');
+        } catch (e: any) {
+          vscode.window.showErrorMessage(`GitHub connection failed: ${e.message || e}`);
+        }
+      })
+    );
+
+    // 12. Sync Current Task
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand('odoo-notepad.syncCurrentTask', async (taskId?: string) => {
+        let id = taskId;
+        if (!id) {
+          const tasks = await StorageService.getTaskMetadataList();
+          if (tasks.length === 0) {
+            vscode.window.showErrorMessage('No tasks available to sync.');
+            return;
+          }
+          const taskPick = await vscode.window.showQuickPick(
+            tasks.map(t => ({ label: t.title, id: t.id })),
+            { placeHolder: 'Select task to sync with GitHub' }
+          );
+          if (!taskPick) { return; }
+          id = taskPick.id;
+        }
+
+        const task = await StorageService.getTask(id);
+        if (!task) {
+          vscode.window.showErrorMessage('Task not found.');
+          return;
+        }
+
+        try {
+          await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Syncing task "${task.title}" with GitHub...`
+          }, async () => {
+            const updatedTask = await GitHubSyncService.pushTask(task);
+            vscode.window.showInformationMessage(`✓ Task "${updatedTask.title}" synchronized with GitHub.`);
+          });
+          vscode.commands.executeCommand('odoo-notepad.refreshTasks');
+        } catch (e: any) {
+          vscode.window.showErrorMessage(`GitHub sync failed: ${e.message || e}`);
+        }
+      })
+    );
+
+    // 13. Push Current Task
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand('odoo-notepad.pushCurrentTask', async (taskId?: string) => {
+        let id = taskId;
+        if (!id) {
+          const tasks = await StorageService.getTaskMetadataList();
+          if (tasks.length === 0) { return; }
+          const taskPick = await vscode.window.showQuickPick(tasks.map(t => ({ label: t.title, id: t.id })));
+          if (!taskPick) { return; }
+          id = taskPick.id;
+        }
+
+        const task = await StorageService.getTask(id);
+        if (!task) { return; }
+
+        try {
+          await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Pushing task "${task.title}" to GitHub...`
+          }, async () => {
+            const updatedTask = await GitHubSyncService.pushTask(task, true);
+            vscode.window.showInformationMessage(`↑ Task "${updatedTask.title}" pushed to GitHub.`);
+          });
+          vscode.commands.executeCommand('odoo-notepad.refreshTasks');
+        } catch (e: any) {
+          vscode.window.showErrorMessage(`Push failed: ${e.message || e}`);
+        }
+      })
+    );
+
+    // 14. Pull Current Task
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand('odoo-notepad.pullCurrentTask', async (taskId?: string) => {
+        let id = taskId;
+        if (!id) {
+          const tasks = await StorageService.getTaskMetadataList();
+          if (tasks.length === 0) { return; }
+          const taskPick = await vscode.window.showQuickPick(tasks.map(t => ({ label: t.title, id: t.id })));
+          if (!taskPick) { return; }
+          id = taskPick.id;
+        }
+
+        try {
+          await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Pulling task from GitHub...`
+          }, async () => {
+            const updatedTask = await GitHubSyncService.pullTask(id);
+            vscode.window.showInformationMessage(`↓ Task "${updatedTask.title}" pulled from GitHub.`);
+          });
+          vscode.commands.executeCommand('odoo-notepad.refreshTasks');
+        } catch (e: any) {
+          vscode.window.showErrorMessage(`Pull failed: ${e.message || e}`);
+        }
+      })
+    );
+
+    // 15. Sync All Tasks
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand('odoo-notepad.syncAll', async () => {
+        const tasks = await StorageService.getTaskMetadataList();
+        if (tasks.length === 0) {
+          vscode.window.showInformationMessage('No tasks found to sync.');
+          return;
+        }
+
+        let syncedCount = 0;
+        let failCount = 0;
+
+        await vscode.window.withProgress({
+          location: vscode.ProgressLocation.Notification,
+          title: 'Syncing all tasks with GitHub...',
+          cancellable: false
+        }, async (progress) => {
+          for (let i = 0; i < tasks.length; i++) {
+            const tMeta = tasks[i];
+            progress.report({ message: `(${i + 1}/${tasks.length}) ${tMeta.title}`, increment: (1 / tasks.length) * 100 });
+            try {
+              const fullTask = await StorageService.getTask(tMeta.id);
+              if (fullTask) {
+                await GitHubSyncService.pushTask(fullTask);
+                syncedCount++;
+              }
+            } catch (e) {
+              failCount++;
+            }
+          }
+        });
+
+        vscode.window.showInformationMessage(`GitHub Sync Complete: ${syncedCount} synchronized, ${failCount} failed.`);
+        vscode.commands.executeCommand('odoo-notepad.refreshTasks');
+      })
+    );
+
+    // 16. Push All Tasks
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand('odoo-notepad.pushAll', async () => {
+        const tasks = await StorageService.getTaskMetadataList();
+        const confirm = await vscode.window.showInformationMessage(
+          `Push all ${tasks.length} local tasks to GitHub?`,
+          'Push All', 'Cancel'
+        );
+        if (confirm === 'Push All') {
+          vscode.commands.executeCommand('odoo-notepad.syncAll');
+        }
+      })
+    );
+
+    // 17. Pull All Tasks
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand('odoo-notepad.pullAll', async () => {
+        const tasks = await StorageService.getTaskMetadataList();
+        let count = 0;
+        for (const t of tasks) {
+          if (t.githubSync?.remotePath) {
+            try {
+              await GitHubSyncService.pullTask(t.id, true);
+              count++;
+            } catch {}
+          }
+        }
+        vscode.window.showInformationMessage(`Pulled ${count} tasks from GitHub.`);
+        vscode.commands.executeCommand('odoo-notepad.refreshTasks');
+      })
+    );
+
+    // 18. Open GitHub Repository
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand('odoo-notepad.openGithubRepo', async () => {
+        const config = await StorageService.getGitHubConfig();
+        if (config.connected && config.repository) {
+          const url = `https://github.com/${config.repository.owner}/${config.repository.name}`;
+          vscode.env.openExternal(vscode.Uri.parse(url));
+        } else {
+          vscode.window.showWarningMessage('GitHub Notes is not connected yet.');
+        }
+      })
+    );
+
+    // 19. Disconnect GitHub
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand('odoo-notepad.disconnectGithub', async () => {
+        const confirm = await vscode.window.showWarningMessage(
+          'Disconnect GitHub Notes synchronization? Your local notes and GitHub repository will remain intact.',
+          { modal: true },
+          'Disconnect'
+        );
+
+        if (confirm === 'Disconnect') {
+          await StorageService.clearGitHubConfig();
+          GitHubAuthService.clearSession();
+          vscode.window.showInformationMessage('Disconnected GitHub Notes synchronization.');
+          vscode.commands.executeCommand('odoo-notepad.refreshTasks');
+        }
+      })
+    );
   }
 }
+

@@ -5,6 +5,7 @@ import { FavoriteTreeProvider } from './providers/favoriteProvider';
 import { RecentTreeProvider } from './providers/recentProvider';
 import { SearchTreeProvider } from './providers/searchProvider';
 import { SettingsTreeProvider } from './providers/settingsProvider';
+import { GitHubTreeProvider } from './providers/githubProvider';
 import { CommandManager } from './commands/commands';
 import { TaskEditorPanel } from './views/taskEditor';
 
@@ -21,12 +22,14 @@ export async function activate(context: vscode.ExtensionContext) {
     const recentProvider = new RecentTreeProvider();
     const searchProvider = new SearchTreeProvider();
     const settingsProvider = new SettingsTreeProvider();
+    const githubProvider = new GitHubTreeProvider();
 
     // 3. Register Sidebar Views
     vscode.window.registerTreeDataProvider('odoo-code-notepad-tasks', taskProvider);
     vscode.window.registerTreeDataProvider('odoo-code-notepad-favorites', favoriteProvider);
     vscode.window.registerTreeDataProvider('odoo-code-notepad-recent', recentProvider);
     vscode.window.registerTreeDataProvider('odoo-code-notepad-search', searchProvider);
+    vscode.window.registerTreeDataProvider('odoo-code-notepad-github', githubProvider);
     vscode.window.registerTreeDataProvider('odoo-code-notepad-settings', settingsProvider);
 
     // 4. Register All Commands
@@ -36,7 +39,8 @@ export async function activate(context: vscode.ExtensionContext) {
       favoriteProvider,
       recentProvider,
       searchProvider,
-      settingsProvider
+      settingsProvider,
+      githubProvider
     );
     commandManager.registerCommands();
 
