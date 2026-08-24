@@ -114,6 +114,23 @@ export class TaskEditorPanel {
           case 'exportPdf':
             vscode.commands.executeCommand('odoo-notepad.exportPdf', this._task.id);
             break;
+          case 'githubSyncTask':
+            vscode.commands.executeCommand('odoo-notepad.syncCurrentTask', this._task.id);
+            break;
+          case 'githubPushTask':
+            vscode.commands.executeCommand('odoo-notepad.pushCurrentTask', this._task.id);
+            break;
+          case 'githubPullTask':
+            vscode.commands.executeCommand('odoo-notepad.pullCurrentTask', this._task.id);
+            break;
+          case 'githubOpenTask':
+            if (this._task.githubSync?.repositoryOwner && this._task.githubSync?.repositoryName && this._task.githubSync?.remotePath) {
+              const url = `https://github.com/${this._task.githubSync.repositoryOwner}/${this._task.githubSync.repositoryName}/tree/main/${this._task.githubSync.remotePath}`;
+              vscode.env.openExternal(vscode.Uri.parse(url));
+            } else {
+              vscode.commands.executeCommand('odoo-notepad.openGithubRepo');
+            }
+            break;
           case 'openExternalUrl':
             if (message.url) {
               try {

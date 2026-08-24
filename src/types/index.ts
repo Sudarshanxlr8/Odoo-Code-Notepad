@@ -1,5 +1,18 @@
 export type TaskStatus = 'Todo' | 'In Progress' | 'Completed' | 'Archived';
 
+export type SyncState = 'synced' | 'local_ahead' | 'remote_ahead' | 'conflict' | 'not_synced' | 'remote_deleted';
+
+export interface GitHubSyncMetadata {
+  enabled: boolean;
+  repositoryOwner?: string;
+  repositoryName?: string;
+  remotePath?: string; // e.g. "todo/peppol-remove-verify-peppol"
+  lastSyncedCommit?: string;
+  lastSyncedHash?: string;
+  lastSyncedAt?: string;
+  syncState: SyncState;
+}
+
 export interface RepositoryInfo {
   repositoryName: string;
   branch: string;
@@ -38,6 +51,7 @@ export interface Task {
   images: string[]; // Store relative paths to image files, e.g., 'images/abc.png'
   snippets: CodeSnippet[];
   favorite?: boolean;
+  githubSync?: GitHubSyncMetadata;
 }
 
 export interface Settings {
@@ -53,3 +67,23 @@ export interface WorkspaceData {
   favoriteTasks: string[]; // Task IDs
   favoriteSnippets: string[]; // Snippet IDs
 }
+
+export interface GitHubAccountInfo {
+  username: string;
+  avatarUrl?: string;
+}
+
+export interface GitHubRepoInfo {
+  owner: string;
+  name: string;
+  isPrivate: boolean;
+  defaultBranch: string;
+}
+
+export interface GitHubConfig {
+  connected: boolean;
+  account?: GitHubAccountInfo;
+  repository?: GitHubRepoInfo;
+  lastSyncedAt?: string;
+}
+
