@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { Task, Settings, WorkspaceData, TaskStatus } from '../types';
+import { Task, Settings, WorkspaceData, TaskStatus, GitHubConfig } from '../types';
 
 export class StorageService {
   private static baseDir = path.join(os.homedir(), '.odoo-code-notepad');
@@ -13,9 +13,11 @@ export class StorageService {
   private static backupsDir = '';
   private static settingsFile = '';
   private static workspaceFile = '';
+  private static githubFile = '';
 
   // In-memory cache for the active task and settings
   private static settingsCache: Settings | null = null;
+  private static githubConfigCache: GitHubConfig | null = null;
 
   /**
    * Initializes the storage directory structure and default files if they don't exist.
@@ -44,6 +46,7 @@ export class StorageService {
     this.backupsDir = path.join(this.baseDir, 'backups');
     this.settingsFile = path.join(this.baseDir, 'settings.json');
     this.workspaceFile = path.join(this.baseDir, 'workspace.json');
+    this.githubFile = path.join(this.baseDir, 'github.json');
 
     // Create directories
     await fs.promises.mkdir(this.baseDir, { recursive: true });
@@ -73,6 +76,14 @@ export class StorageService {
         favoriteSnippets: []
       };
       await fs.promises.writeFile(this.workspaceFile, JSON.stringify(defaultWorkspace, null, 2), 'utf8');
+    }
+
+    // Initialize GitHub Config
+    if (!fs.existsSync(this.githubFile)) {
+      const defaultGitHubConfig: GitHubConfig = {
+        connected: false
+      };
+      await fs.promises.writeFile(this.githubFile, JSON.stringify(defaultGitHubConfig, null, 2), 'utf8');
     }
   }
 
@@ -145,6 +156,37 @@ export class StorageService {
 
   public static async saveWorkspaceData(data: WorkspaceData): Promise<void> {
     await fs.promises.writeFile(this.workspaceFile, JSON.stringify(data, null, 2), 'utf8');
+  }
+
+  // --- GitHub Config Management ---
+
+  public static async getGitHubConfig(): Promise<GitHubConfig> {
+    if (this.githubConfigCache) {
+      return this.githubConfigCache;
+    }
+    try {
+      if (fs.existsSync(this.githubFile)) {
+        const data = await fs.promises.readFile(this.githubFile, 'utf8');
+        this.githubConfigCache = JSON.parse(data) as GitHubConfig;
+        return this.githubConfigCache;
+      }
+    } catch (e) {
+      console.error('Error reading github.json:', e);
+    }
+    const defaultConfig: GitHubConfig = { connected: false };
+    this.githubConfigCache = defaultConfig;
+    return defaultConfig;
+  }
+
+  public static async saveGitHubConfig(config: GitHubConfig): Promise<void> {
+    this.githubConfigCache = config;
+    await fs.promises.writeFile(this.githubFile, JSON.stringify(config, null, 2), 'utf8');
+  }
+
+  public static async clearGitHubConfig(): Promise<void> {
+    const defaultConfig: GitHubConfig = { connected: false };
+    this.githubConfigCache = defaultConfig;
+    await fs.promises.writeFile(this.githubFile, JSON.stringify(defaultConfig, null, 2), 'utf8');
   }
 
   // --- Task Management (Lazy Loading) ---
