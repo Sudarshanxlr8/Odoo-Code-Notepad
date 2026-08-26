@@ -8,7 +8,8 @@ export class TaskTreeItem extends vscode.TreeItem {
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly type: 'category' | 'task',
     public readonly status?: TaskStatus,
-    public readonly taskId?: string
+    public readonly taskId?: string,
+    public readonly syncState?: string
   ) {
     super(label, collapsibleState);
     
@@ -20,6 +21,39 @@ export class TaskTreeItem extends vscode.TreeItem {
         title: 'Open Task',
         arguments: [this.taskId]
       };
+
+      // Set sync state indicators & tooltips
+      let syncSymbol = '';
+      let syncTooltip = '';
+      switch (syncState) {
+        case 'synced':
+          syncSymbol = '✓ ';
+          syncTooltip = 'Synchronized with GitHub';
+          break;
+        case 'local_ahead':
+          syncSymbol = '↑ ';
+          syncTooltip = 'Local changes waiting to be pushed';
+          break;
+        case 'remote_ahead':
+          syncSymbol = '↓ ';
+          syncTooltip = 'GitHub has newer changes to pull';
+          break;
+        case 'conflict':
+          syncSymbol = '⚠ ';
+          syncTooltip = 'Sync conflict between local and GitHub';
+          break;
+        case 'remote_deleted':
+          syncSymbol = '! ';
+          syncTooltip = 'Remote task was deleted on GitHub';
+          break;
+        default:
+          syncSymbol = '○ ';
+          syncTooltip = 'Not synchronized with GitHub';
+          break;
+      }
+
+      this.label = `${syncSymbol}${label}`;
+      this.tooltip = `${label}\nGitHub Status: ${syncTooltip}`;
       
       // Select icon based on status
       switch (status) {
@@ -92,7 +126,8 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
           vscode.TreeItemCollapsibleState.None, 
           'task', 
           status, 
-          t.id
+          t.id,
+          t.githubSync?.syncState || 'not_synced'
         )
       );
     }
